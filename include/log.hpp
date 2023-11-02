@@ -11,7 +11,6 @@ extern "C" {
 #include <stdlib.h>
 #include <unistd.h>
 
-uint32_t compute_checksum(const void *pkt, size_t n_bytes);
 
 // Use it to display a help message
 #define LOG_MSG(...)                                                    \

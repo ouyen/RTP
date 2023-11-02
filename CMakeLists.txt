@@ -29,6 +29,8 @@ include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
 include(GoogleTest)
 
+include_directories (include)
+
 add_library(rtp_all src/util.c)
 
 add_executable(sender src/sender.c)
