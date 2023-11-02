@@ -8,7 +8,7 @@
 #include <iostream>
 #include <thread>
 
-#include "log.hpp"
+#include "util.h"
 
 #define ORIGIN SOURCE_DIR "/build/testdata"
 #define RESULT SOURCE_DIR "/build/recvfile"

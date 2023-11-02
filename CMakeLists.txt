@@ -31,16 +31,16 @@ include(GoogleTest)
 
 include_directories (include)
 
-add_library(rtp_all src/util.c)
+# add_library(rtp_all src/util.c)
 
 add_executable(sender src/sender.c)
-target_link_libraries(sender PUBLIC rtp_all)
+target_link_libraries(sender PUBLIC)
 
 add_executable(receiver src/receiver.c)
-target_link_libraries(receiver PUBLIC rtp_all)
+target_link_libraries(receiver PUBLIC)
 
 add_executable(rtp_test_all src/test.cpp)
 target_link_libraries(rtp_test_all PUBLIC Threads::Threads GTest::gtest_main)
-target_link_libraries(rtp_test_all PUBLIC rtp_all)
+target_link_libraries(rtp_test_all PUBLIC)
 
 gtest_discover_tests(rtp_test_all)
