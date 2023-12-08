@@ -2,3 +2,4 @@ build
 test
 Lab2-RTP-Test/*
 test*
+/cmake-build-debug/
