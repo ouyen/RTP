@@ -16,6 +16,8 @@ int main(int argc, char **argv) {
     int window_size = atoi(argv[3]);
     int mode = atoi(argv[4]);
 
+    RTPServer server(port, window_size, mode);
+
     LOG_DEBUG("Receiver: exiting...\n");
     return 0;
 }
