@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-#ifdef __cplusplus
+// #ifdef __cplusplus
 extern "C" {
-#endif
+// #endif
 
 #define PAYLOAD_MAX 1461
 
@@ -17,19 +17,19 @@ typedef enum RtpHeaderFlag {
 } rtp_header_flag_t;
 
 typedef struct __attribute__((__packed__)) RtpHeader {
-    uint32_t seq_num;  // Sequence number
-    uint16_t length;   // Length of data; 0 for SYN, ACK, and FIN packets
-    uint32_t checksum; // 32-bit CRC
-    uint8_t flags;     // See at `RtpHeaderFlag`
+    uint32_t seq_num;   // Sequence number
+    uint16_t length;    // Length of data; 0 for SYN, ACK, and FIN packets
+    uint32_t checksum;  // 32-bit CRC
+    uint8_t flags;      // See at `RtpHeaderFlag`
 } rtp_header_t;
 
 typedef struct __attribute__((__packed__)) RtpPacket {
-    rtp_header_t rtp;          // header
-    char payload[PAYLOAD_MAX]; // data
+    rtp_header_t rtp;           // header
+    char payload[PAYLOAD_MAX];  // data
 } rtp_packet_t;
 
-#ifdef __cplusplus
+// #ifdef __cplusplus
 }
-#endif
+// #endif
 
-#endif // __RTP_H
+#endif  // __RTP_H

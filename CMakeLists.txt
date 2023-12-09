@@ -33,10 +33,10 @@ include_directories (include)
 
 # add_library(rtp_all src/util.c)
 
-add_executable(sender src/sender.c)
+add_executable(sender src/sender.cpp)
 target_link_libraries(sender PUBLIC)
 
-add_executable(receiver src/receiver.c)
+add_executable(receiver src/receiver.cpp)
 target_link_libraries(receiver PUBLIC)
 
 add_executable(rtp_test_all src/test.cpp)
