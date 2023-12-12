@@ -254,7 +254,7 @@ class RTP {
                 LOG_FATAL("MAX_TRY\n");
                 return 1;
             } else {
-                LOG_FATAL("Timeout, send again\n");
+                LOG_DEBUG("Timeout, send again\n");
             }
         }
         return 1;

@@ -84,7 +84,7 @@ int RTPClient::send_gbn(const string& filepath) {
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        for (uint32_t i = 0; i < MAX_TRY; ++i) {
+        for (uint32_t i = 0; i < sliding_window.get_window_size(); ++i) {
             // udp_socket->set_timeout(0, 0);
             rtp_header_t header = receive_head();
             if (header.length == 0) {
