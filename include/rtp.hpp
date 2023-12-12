@@ -5,7 +5,9 @@
 #include <chrono>
 #include <deque>
 #include <memory>
+#include <vector>
 #include "crc32.hpp"
+#include "file.hpp"
 #include "udp.hpp"
 
 // #ifdef __cplusplus
@@ -36,7 +38,7 @@ typedef struct __attribute__((__packed__)) RtpPacket {
 // #ifdef __cplusplus
 }
 // #endif
-
+using namespace std;
 class CRC32 {
     static uint32_t crc32_for_byte(uint32_t r) {
         for (int j = 0; j < 8; ++j)
@@ -114,7 +116,9 @@ class SlidingWindow {
    private:
     uint32_t window_size;
     uint32_t sliding_window_start = 0;
-    // deque<string> window;
+    deque<string> window;
+    vector<string> buffer;
+
    protected:
     deque<bool> acked;
 
@@ -122,12 +126,16 @@ class SlidingWindow {
     SlidingWindow(uint32_t window_size) : window_size(window_size) {
         // window.resize(window_size);
         acked.resize(window_size);
+        window.resize(window_size);
     }
     uint32_t get_window_size() const { return window_size; }
     void slide() {
         while (acked.front()) {
             acked.pop_front();
             ++sliding_window_start;
+            buffer.push_back(move(window.front()));
+            window.pop_front();
+            window.push_back("");
             acked.push_back(0);
             // window.pop_front();
         }
@@ -136,7 +144,13 @@ class SlidingWindow {
         return (index >= sliding_window_start &&
                 index < sliding_window_start + window_size);
     }
-    bool is_sent(uint32_t index) const {
+    bool is_old(uint32_t index) const {
+        return (index < sliding_window_start);
+    }
+    bool too_large(uint32_t index) const {
+        return (index >= sliding_window_start + window_size);
+    }
+    bool is_set(uint32_t index) const {
         if (in_range(index)) {
             return acked[index - sliding_window_start];
         } else {
@@ -144,15 +158,19 @@ class SlidingWindow {
         }
     }
 
-    bool not_sent(uint32_t index) const { return !is_sent(index); }
-    void sent(uint32_t index) {
+    bool not_set(uint32_t index) const { return !is_set(index); }
+    void set(uint32_t index, string&& data) {
         if (in_range(index)) {
             acked[index - sliding_window_start] = 1;
+            window[index - sliding_window_start] = move(data);
             slide();
             return;
         }
     }
     uint32_t get_start() const { return sliding_window_start; }
+    void save_to_file(const string& filepath) {
+        string_list_to_file(filepath, buffer);
+    }
 };
 
 enum RTPMode {
@@ -235,6 +253,21 @@ class RTP {
         return header;
     }
 
+    rtp_packet_t receive_packet() {
+        string data = udp_socket->receive(11 + MAX_DATA_LEN);
+        rtp_packet_t packet;
+        memset(&packet, 0, sizeof(rtp_packet_t));
+        memcpy(&packet.rtp, data.c_str(),
+               min(sizeof(rtp_header_t), data.size()));
+        size_t len;
+        if (data.size() < 11)
+            len = 0;
+        else
+            len = min(size_t(packet.rtp.length), data.size() - 11);
+        memcpy(packet.payload, data.c_str() + 11, min(len, data.size() - 11));
+        return packet;
+    }
+
     bool check_time_out(std::chrono::_V2::system_clock::time_point start,
                         int ms = 100) {
         auto end = std::chrono::high_resolution_clock::now();
@@ -289,6 +322,8 @@ class RTP {
 class RTPServer : private RTP {
    private:
     // UDPServer udp_server;
+    void receive_gbn(const string& filepath);
+    void receive_sr(const string& filepath);
 
    public:
     RTPServer(int port, int window_size, int mode);
@@ -301,14 +336,14 @@ class RTPClient : private RTP {
    private:
     // UDPClient udp_client;
     uint32_t final_seq_num = 0;
+    int send_gbn(const string& filepath);
+    int send_sr(const string& filepath);
 
    public:
     RTPClient(const string& ip, int port, int window_size, int mode);
     // ~RTPClient();
     // int send(const string& buf, uint64_t length = -1);
     int send(const string& filepath);
-    int send_gbn(const string& filepath);
-    int send_sr(const string& filepath);
 
     void close();
 };

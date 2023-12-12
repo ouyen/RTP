@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     int mode = atoi(argv[4]);
 
     RTPServer server(port, window_size, mode);
-    
+    server.receive(file_path);
 
     LOG_DEBUG("Receiver: exiting...\n");
     return 0;

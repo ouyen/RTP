@@ -168,7 +168,7 @@ int RTPClient::send_sr(const string& filepath) {
             if (i >= max_index) {
                 break;
             }
-            if (sliding_window.not_sent(i)) {
+            if (sliding_window.not_set(i)) {
                 LOG_DEBUG("Data sent,index: %u, SEQ: %u\n", i,
                           seq_biased_index(i));
                 send_packet(seq_biased_index(i), file_data);
@@ -195,8 +195,8 @@ int RTPClient::send_sr(const string& filepath) {
                     uint32_t index = (header.seq_num - 1 - seq_num_start);
                     LOG_DEBUG("ACK received: %u,index :%u\n", header.seq_num,
                               index);
-                    if (sliding_window.not_sent(index)) {
-                        sliding_window.sent(index);
+                    if (sliding_window.not_set(index)) {
+                        sliding_window.set(index);
                         start = std::chrono::high_resolution_clock::now();
                         // break;
                     }
