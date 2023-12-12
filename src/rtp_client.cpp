@@ -23,7 +23,7 @@ RTPClient::RTPClient(const string& ip, int port, int window_size, int mode)
     uniform_int_distribution<> dist(0, 0xffffff);
     seq_num_start = dist(eng);
 
-    seq_num_start = 0x4c2e35d0;
+    // seq_num_start = 0x4c2e35d0;
 
     LOG_DEBUG("seq_num_start: %u\n", seq_num_start);
 
