@@ -24,10 +24,14 @@ RTPServer::RTPServer(int port, int window_size, int mode)
             LOG_DEBUG("SYN received\n");
             seq_num_start = header.seq_num;
             LOG_DEBUG("seq_num_start: %u\n", seq_num_start);
+            cout<< "checksum: "<<header.checksum<<endl;
+            cout<< "seq_num: "<<header.seq_num<<endl;
+            cout<< "flags: "<<uint32_t(header.flags)<<endl;
+            cout<< "length: "<<header.length<<endl;
             // send SYNACK
 
             string reply =
-                RTP::make_head(seq_num_start + 1, 0, 0, RTP_SYN | RTP_ACK);
+                RTP::make_head(seq_num_start + 1, RTP_SYN | RTP_ACK);
             send_wait_for_reply(reply, seq_num_start + 1, RTP_ACK);
             break;
         } else {

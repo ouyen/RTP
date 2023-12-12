@@ -23,9 +23,10 @@ RTPClient::RTPClient(const string& ip, int port, int window_size, int mode)
     LOG_DEBUG("seq_num_start: %u\n", seq_num_start);
 
     // send SYN
-    string data = RTP::make_head(seq_num_start, 0, 0, RTP_SYN);
+    string data = RTP::make_head(seq_num_start, RTP_SYN);
+
     if (!send_wait_for_reply(data, seq_num_start + 1, RTP_SYN | RTP_ACK)) {
-        data = RTP::make_head(seq_num_start + 1, 0, 0, RTP_ACK);
+        data = RTP::make_head(seq_num_start + 1, RTP_ACK);
         // usleep(200);
         // for (;;)
         {
@@ -51,17 +52,17 @@ int RTPClient::send_gbn(const string& filepath) {
     string file_data = file_to_string(filepath);
     uint32_t file_size = file_data.size();
 
-    int max_index =
+    uint32_t max_index =
         file_size / RTP::MAX_DATA_LEN + bool(file_size % RTP::MAX_DATA_LEN);
 
     LOG_DEBUG("file_size: %u , slide to %u pieces\n", file_size, max_index);
 
     // send file
-    for (int same_window_count = 0; same_window_count < MAX_TRY;
+    for (uint32_t same_window_count = 0; same_window_count < MAX_TRY;
          ++same_window_count) {
         // send data in window
-        int sliding_window_start = 0;
-        for (int i = sliding_window_start;
+        uint32_t sliding_window_start = 0;
+        for (uint32_t i = sliding_window_start;
              i < sliding_window.get_window_size() + sliding_window_start; ++i) {
             if (i >= max_index) {
                 break;
@@ -72,25 +73,24 @@ int RTPClient::send_gbn(const string& filepath) {
         }
 
         // wait for response
-        int curr_max_reply = sliding_window_start;
+        uint32_t curr_max_reply = sliding_window_start;
         auto start = std::chrono::high_resolution_clock::now();
 
-        for (int i = 0; i < MAX_TRY; ++i) {
+        for (uint32_t i = 0; i < MAX_TRY; ++i) {
             udp_socket->set_timeout(0, 100);
             rtp_header_t header = receive_head();
             if (header.checksum == 0 && header.length == 0) {
                 if (header.flags == RTP_ACK) {
                     LOG_DEBUG("ACK received: %u\n", header.seq_num);
-                    if (header.seq_num - 1 - seq_num_start > curr_max_reply) {
+                    if ((header.seq_num - 1 - seq_num_start) > curr_max_reply) {
                         curr_max_reply = header.seq_num - 1 - seq_num_start;
                         start = std::chrono::high_resolution_clock::now();
                     }
                 } else if (sliding_window_start == 0 &&
-                           header.flags == RTP_SYN | RTP_ACK &&
+                           header.flags == (RTP_SYN | RTP_ACK) &&
                            header.seq_num == seq_num_start + 1) {
                     LOG_DEBUG("SYNACK received: %u\n", header.seq_num);
-                    auto data =
-                        RTP::make_head(seq_num_start + 1, 0, 0, RTP_ACK);
+                    auto data = RTP::make_head(seq_num_start + 1, RTP_ACK);
                     {
                         udp_socket->send(data);
                         LOG_DEBUG("Send ACK: %u\n", seq_num_start + 1);
@@ -111,4 +111,8 @@ int RTPClient::send_gbn(const string& filepath) {
             break;
         }
     }
+}
+
+int RTPClient::send_sr(const string& filepath) {
+    return send_gbn(filepath);
 }

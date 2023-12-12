@@ -16,6 +16,7 @@ int main(int argc, char** argv) {
     int mode = atoi(argv[5]);
 
     RTPClient client(ip,port, window_size, mode);
+    client.send(file_path);
 
     LOG_DEBUG("Sender: exiting...\n");
     return 0;
