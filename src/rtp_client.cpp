@@ -145,7 +145,93 @@ int RTPClient::send_gbn(const string& filepath) {
 }
 
 int RTPClient::send_sr(const string& filepath) {
-    return send_gbn(filepath);
+    string file_data = file_to_string(filepath);
+    uint32_t file_size = file_data.size();
+
+    uint32_t max_index =
+        file_size / RTP::MAX_DATA_LEN + bool(file_size % RTP::MAX_DATA_LEN);
+
+    final_seq_num = seq_biased_index(max_index);
+    // cout<<"final_seq_num: "<<final_seq_num<<endl;
+    // cout<<"start: "<<seq_num_start<<endl;
+
+    LOG_DEBUG("file_size: %u , slide to %u pieces\n", file_size, max_index);
+    uint32_t sliding_window_start = 0;
+    // send file
+    // uint32_t same_window_count = 0;
+    // for (; same_window_count < MAX_TRY; ++same_window_count)
+    for (;;) {
+        // send data in window
+
+        for (uint32_t i = sliding_window_start;
+             i < sliding_window.get_window_size() + sliding_window_start; ++i) {
+            if (i >= max_index) {
+                break;
+            }
+            if (sliding_window.not_sent(i)) {
+                LOG_DEBUG("Data sent,index: %u, SEQ: %u\n", i,
+                          seq_biased_index(i));
+                send_packet(seq_biased_index(i), file_data);
+            }
+        }
+
+        // wait for response
+        auto start = std::chrono::high_resolution_clock::now();
+
+        for (uint32_t i = 0; i < sliding_window.get_window_size(); ++i) {
+            // udp_socket->set_timeout(0, 0);
+            rtp_header_t header = receive_head();
+            if (header.length == 0) {
+                LOG_DEBUG("Recevie flag:%u\n", uint32_t(header.flags));
+                if (header.flags == 0) {
+                    LOG_DEBUG("No ACK in 100ms\n");
+                    continue;
+                }
+                if (CRC32::check_crc(header) == false) {
+                    LOG_DEBUG("CRC ERROR\n");
+                    continue;
+                }
+                if (header.flags == RTP_ACK) {
+                    uint32_t index = (header.seq_num - 1 - seq_num_start);
+                    LOG_DEBUG("ACK received: %u,index :%u\n", header.seq_num,
+                              index);
+                    if (sliding_window.not_sent(index)) {
+                        sliding_window.sent(index);
+                        start = std::chrono::high_resolution_clock::now();
+                        // break;
+                    }
+                } else if (sliding_window_start == 0 &&
+                           header.flags == (RTP_SYN | RTP_ACK) &&
+                           header.seq_num == seq_num_start + 1) {
+                    LOG_DEBUG("SYNACK received: %u\n", header.seq_num);
+                    auto data = RTP::make_head(seq_num_start + 1, RTP_ACK);
+                    {
+                        udp_socket->send(data);
+                        LOG_DEBUG("Send ACK: %u\n", seq_num_start + 1);
+                    }
+                }
+            }
+            if (check_time_out(start)) {
+                LOG_DEBUG("Sliding Windows Timeout\n");
+                break;
+            }
+        }
+
+        // if (curr_max_reply != sliding_window_start) {
+        //     --same_window_count;
+        // }
+       
+        sliding_window_start = sliding_window.get_start();
+        if (sliding_window_start >= max_index) {
+            LOG_DEBUG("All data sent\n");
+            break;
+        }
+    }
+    // if (same_window_count == MAX_TRY) {
+    //     LOG_DEBUG("MAX_TRY for Same Window\n");
+    //     return 1;
+    // }
+    return 0;
 }
 
 void RTPClient::close() {

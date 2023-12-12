@@ -113,6 +113,7 @@ static CRC32 compute_checksum;
 class SlidingWindow {
    private:
     uint32_t window_size;
+    uint32_t sliding_window_start = 0;
     // deque<string> window;
    protected:
     deque<bool> acked;
@@ -126,10 +127,32 @@ class SlidingWindow {
     void slide() {
         while (acked.front()) {
             acked.pop_front();
+            ++sliding_window_start;
             acked.push_back(0);
             // window.pop_front();
         }
     }
+    bool in_range(uint32_t index) const {
+        return (index >= sliding_window_start &&
+                index < sliding_window_start + window_size);
+    }
+    bool is_sent(uint32_t index) const {
+        if (in_range(index)) {
+            return acked[index - sliding_window_start];
+        } else {
+            return false;
+        }
+    }
+
+    bool not_sent(uint32_t index) const { return !is_sent(index); }
+    void sent(uint32_t index) {
+        if (in_range(index)) {
+            acked[index - sliding_window_start] = 1;
+            slide();
+            return;
+        }
+    }
+    uint32_t get_start() const { return sliding_window_start; }
 };
 
 enum RTPMode {
@@ -226,7 +249,7 @@ class RTP {
                              uint32_t target_flag,
                              uint32_t try_num = 50) {
         for (uint32_t i = 0; i <= try_num; ++i) {
-            int send_return = udp_socket->send(data,11);
+            int send_return = udp_socket->send(data, 11);
             if (send_return == -1) {
                 LOG_FATAL("Send failed\n");
                 return 1;
@@ -255,7 +278,7 @@ class RTP {
                 LOG_DEBUG("MAX_TRY\n");
                 return 1;
             } else {
-                LOG_DEBUG("Timeout, send again: %u\n",i);
+                LOG_DEBUG("Timeout, send again: %u\n", i);
             }
         }
         return 1;
