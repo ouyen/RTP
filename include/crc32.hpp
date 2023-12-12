@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <string>
 using namespace std;
 
 class CRC32 {
@@ -28,7 +29,9 @@ class CRC32 {
     //
     // Hint 2: `len + sizeof(rtp_header_t)` is the real length of a rtp
     // data packet.
-    uint32_t operator()(const void* pkt, size_t n_bytes) {
+    uint32_t operator()(const string& data) {
+        const void* pkt = data.c_str();
+        size_t n_bytes = data.size();
         uint32_t crc = 0;
         crc32(pkt, n_bytes, &crc);
         return crc;
