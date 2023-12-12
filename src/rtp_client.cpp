@@ -12,6 +12,8 @@ using namespace std;
 // client is sender
 RTPClient::RTPClient(const string& ip, int port, int window_size, int mode)
     : RTP(window_size, mode) {
+    LOG_DEBUG("RTPClient: ip: %s, port: %d\n", ip.c_str(), port);
+
     udp_socket = make_unique<UDPClient>(ip, port);
 
     // random seq_num_start
@@ -29,7 +31,7 @@ RTPClient::RTPClient(const string& ip, int port, int window_size, int mode)
     string data = RTP::make_head(seq_num_start, RTP_SYN);
 
     LOG_DEBUG("Send SYN: %u\n", seq_num_start);
-    if (!send_wait_for_reply(data, seq_num_start + 1, RTP_SYN | RTP_ACK)) {
+    if (!send_wait_for_reply(data, seq_num_start + 1, RTP_SYN | RTP_ACK, 10)) {
         data = RTP::make_head(seq_num_start + 1, RTP_ACK);
         // usleep(200);
         // for (;;)
@@ -66,8 +68,9 @@ int RTPClient::send_gbn(const string& filepath) {
     LOG_DEBUG("file_size: %u , slide to %u pieces\n", file_size, max_index);
     uint32_t sliding_window_start = 0;
     // send file
-    for (uint32_t same_window_count = 0; same_window_count < MAX_TRY;
-         ++same_window_count) {
+    // uint32_t same_window_count = 0;
+    // for (; same_window_count < MAX_TRY; ++same_window_count)
+    for (;;) {
         // send data in window
 
         for (uint32_t i = sliding_window_start;
@@ -75,7 +78,7 @@ int RTPClient::send_gbn(const string& filepath) {
             if (i >= max_index) {
                 break;
             }
-            LOG_DEBUG("Data sent: %u\n", seq_biased_index(i));
+            LOG_DEBUG("Data sent,index: %u, SEQ: %u\n", i, seq_biased_index(i));
             send_packet(seq_biased_index(i), file_data);
         }
 
@@ -123,17 +126,21 @@ int RTPClient::send_gbn(const string& filepath) {
             }
         }
 
-        if (curr_max_reply != sliding_window_start) {
-            --same_window_count;
-        }
-        LOG_DEBUG("Sliding Window start:from %u to %u\n", sliding_window_start,
-                  curr_max_reply);
+        // if (curr_max_reply != sliding_window_start) {
+        //     --same_window_count;
+        // }
+        LOG_DEBUG("Sliding Window start:from %u to %u, target: %u\n",
+                  sliding_window_start, curr_max_reply, max_index);
         sliding_window_start = curr_max_reply;
         if (sliding_window_start >= max_index) {
             LOG_DEBUG("All data sent\n");
             break;
         }
     }
+    // if (same_window_count == MAX_TRY) {
+    //     LOG_DEBUG("MAX_TRY for Same Window\n");
+    //     return 1;
+    // }
     return 0;
 }
 
@@ -144,7 +151,8 @@ int RTPClient::send_sr(const string& filepath) {
 void RTPClient::close() {
     LOG_DEBUG("Send FIN: %u\n", final_seq_num);
     string data = RTP::make_head(final_seq_num, RTP_FIN);
-    bool result = send_wait_for_reply(data, final_seq_num, RTP_FIN | RTP_ACK);
-    LOG_DEBUG("Fin ack received?: %d\n", result);
+    bool result =
+        send_wait_for_reply(data, final_seq_num, RTP_FIN | RTP_ACK, 200);
+    LOG_DEBUG("Fin ack received?: %s\n", (result == 0) ? "true" : "false");
     udp_socket->close();
 }

@@ -223,9 +223,10 @@ class RTP {
 
     bool send_wait_for_reply(const string& data,
                              uint32_t target_seq_num,
-                             uint32_t target_flag) {
-        for (uint32_t i = 0; i <= MAX_TRY; ++i) {
-            int send_return = udp_socket->send(data);
+                             uint32_t target_flag,
+                             uint32_t try_num = 50) {
+        for (uint32_t i = 0; i <= try_num; ++i) {
+            int send_return = udp_socket->send(data,11);
             if (send_return == -1) {
                 LOG_FATAL("Send failed\n");
                 return 1;
@@ -249,12 +250,12 @@ class RTP {
             //     LOG_DEBUG("timeout\n");
             //     continue;
             // }
-
-            if (i == MAX_TRY) {
-                LOG_FATAL("MAX_TRY\n");
+            usleep(100);
+            if (i == try_num) {
+                LOG_DEBUG("MAX_TRY\n");
                 return 1;
             } else {
-                LOG_DEBUG("Timeout, send again\n");
+                LOG_DEBUG("Timeout, send again: %u\n",i);
             }
         }
         return 1;
