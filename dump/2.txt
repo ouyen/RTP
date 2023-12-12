@@ -1,0 +1,13 @@
+75 6465 3c69 6f73 7472  ..\....ude<iostr
+        0x0030:  6561 6d3e 0a23 696e 636c 7564 6520 2269  eam>.#include."i
+        0x0040:  6e63 6c75 6465 2f63 7263 3332 2e68 7070  nclude/crc32.hpp
+        0x0050:  220a 2364 6566 696e 6520 4c44 4542 5547  ".#define.LDEBUG
+        0x0060:  2031 0a23 696e 636c 7564 6520 2269 6e63  .1.#include."inc
+        0x0070:  6c75 6465 2f75 7469 6c2e 6822 0a75 7369  lude/util.h".usi
+        0x0080:  6e67 206e 616d 6573 7061 6375 6465 3c69  ng.namespacude<i
+        0x0090:  6f73 7472 6561 6d3e 0a23 696e 636c 7564  ostream>.#includ
+        0x00a0:  6520 2269 6e63 6c75 6465 2f63 7263 3332  e."include/crc32
+        0x00b0:  2e68 7070 220a 2364 6566 696e 6520 4c44  .hpp".#define.LD
+        0x00c0:  4542 5547 2031 0a23 696e 636c 7564 6520  EBUG.1.#include.
+        0x00d0:  2269 6e63 6c75 6465 2f75 7469 6c2e 6822  "include/util.h"
+        0x00e0:  0a75 7369 6e67 206e 616d 6573 7061 63    .using.namespac

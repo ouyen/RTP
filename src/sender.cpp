@@ -17,6 +17,7 @@ int main(int argc, char** argv) {
 
     RTPClient client(ip,port, window_size, mode);
     client.send(file_path);
+    client.close();
 
     LOG_DEBUG("Sender: exiting...\n");
     return 0;

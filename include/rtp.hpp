@@ -81,7 +81,8 @@ class CRC32 {
     }
 
     uint32_t operator()(const struct RtpPacket& packet) {
-        return (*this)((char*)(&packet), sizeof(struct RtpPacket));
+        uint16_t len = packet.rtp.length;
+        return (*this)((char*)(&packet), sizeof(struct RtpHeader) + len);
     }
 
     static bool check_crc(struct RtpHeader& head) {
@@ -96,9 +97,10 @@ class CRC32 {
     static bool check_crc(struct RtpPacket& packet) {
         uint32_t crc = packet.rtp.checksum;
         packet.rtp.checksum = 0;
+        uint16_t len = packet.rtp.length;
 
         uint32_t cal_crc = 0;
-        crc32(&packet, sizeof(struct RtpPacket), &cal_crc);
+        crc32(&packet, 11 + len, &cal_crc);
 
         bool result = (crc == cal_crc);
         packet.rtp.checksum = crc;
@@ -142,7 +144,7 @@ class RTP {
     SlidingWindow sliding_window;
     RTPMode mode;
     uint32_t seq_num_start = 0;
-    inline uint32_t seq_biased_index(uint32_t index) {
+    uint32_t seq_biased_index(uint32_t index) {
         return seq_num_start + index + 1;
     }
 
@@ -175,16 +177,38 @@ class RTP {
 
         packet.rtp.checksum = compute_checksum(packet);
 
-        return string((char*)&packet, sizeof(rtp_packet_t));
+        return string((char*)&packet);
+    }
+
+    int send_packet(uint32_t seq_num, const string& full_data) {
+        rtp_packet_t packet;
+        memset(&packet, 0, sizeof(rtp_packet_t));
+        string payload = full_data.substr(
+            (seq_num - seq_num_start - 1) * MAX_DATA_LEN, MAX_DATA_LEN);
+
+        packet.rtp.seq_num = seq_num;
+        packet.rtp.length = payload.size();
+        packet.rtp.flags = 0;
+        // packet.rtp.checksum = compute_checksum(payload);
+
+        memcpy(packet.payload, payload.c_str(), payload.size());
+
+        packet.rtp.checksum = compute_checksum(packet);
+
+        return udp_socket->send(string((char*)&packet.rtp, 11) + payload,
+                                11 + payload.size());
     }
 
     rtp_header_t receive_head() {
-        string data = udp_socket->receive();
+        string data = udp_socket->receive(11);
         rtp_header_t header;
         // fill with 0
         memset(&header, 0, sizeof(rtp_header_t));
         // if (data.size() < sizeof(rtp_header_t))
         memcpy(&header, data.c_str(), min(sizeof(rtp_header_t), data.size()));
+        // if (data == "") {
+        //     header.flags = 0x11;
+        // }
         return header;
     }
 
@@ -201,12 +225,17 @@ class RTP {
                              uint32_t target_seq_num,
                              uint32_t target_flag) {
         for (uint32_t i = 0; i <= MAX_TRY; ++i) {
-            udp_socket->send(data);
-            LOG_DEBUG("Data sent, wait for reply: %u\n", target_seq_num);
+            int send_return = udp_socket->send(data);
+            if (send_return == -1) {
+                LOG_FATAL("Send failed\n");
+                return 1;
+            }
+            LOG_DEBUG("Data sent %u, wait for ACK: %u\n", target_seq_num,
+                      target_seq_num);
             // auto start = chrono::high_resolution_clock::now();
             udp_socket->set_timeout(0, 100);
             rtp_header_t header = receive_head();
-            if (header.flags == target_flag &&
+            if (CRC32::check_crc(header) && header.flags == target_flag &&
                 header.seq_num == target_seq_num) {
                 LOG_DEBUG("Reply received: %u\n", target_seq_num);
                 return 0;
@@ -225,7 +254,7 @@ class RTP {
                 LOG_FATAL("MAX_TRY\n");
                 return 1;
             } else {
-                LOG_DEBUG("timeout\n");
+                LOG_FATAL("Timeout, send again\n");
             }
         }
         return 1;
@@ -247,6 +276,7 @@ class RTPServer : private RTP {
 class RTPClient : private RTP {
    private:
     // UDPClient udp_client;
+    uint32_t final_seq_num = 0;
 
    public:
     RTPClient(const string& ip, int port, int window_size, int mode);

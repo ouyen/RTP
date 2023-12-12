@@ -1,0 +1,62 @@
+$ sudo tcpdump -i lo port 8080 -X
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on lo, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+
+22:36:48.459768 IP localhost.59977 > localhost.8080: UDP, length 11
+        0x0000:  4500 0027 c6d7 4000 4011 75ec 7f00 0001  E..'..@.@.u.....
+                                              | seq |
+        0x0010:  7f00 0001 ea49 1f90 0013 fe26 d035 2e4c  .....I.....&.5.L
+                | len |  crc    |FLAG|
+        0x0020:  0000 2eae 04a9 01   
+
+# 三次握手
+
+22:36:48.459768 IP localhost.59977 > localhost.8080: UDP, length 11
+        0x0000:  4500 0027 c6d7 4000 4011 75ec 7f00 0001  E..'..@.@.u.....
+        0x0010:  7f00 0001 ea49 1f90 0013 fe26 d035 2e4c  .....I.....&.5.L
+        0x0020:  0000 2eae 04a9 01                        .......
+22:36:48.459845 IP localhost.8080 > localhost.59977: UDP, length 11
+        0x0000:  4500 0027 c6d8 4000 4011 75eb 7f00 0001  E..'..@.@.u.....
+        0x0010:  7f00 0001 1f90 ea49 0013 fe26 d135 2e4c  .......I...&.5.L
+        0x0020:  0000 c210 8486 03                        .......
+22:36:48.459893 IP localhost.59977 > localhost.8080: UDP, length 11
+        0x0000:  4500 0027 c6d9 4000 4011 75ea 7f00 0001  E..'..@.@.u.....
+        0x0010:  7f00 0001 ea49 1f90 0013 fe26 d135 2e4c  .....I.....&.5.L
+        0x0020:  0000 5420 83f1 02                        ..T....
+
+# DATA
+22:36:48.459914 IP localhost.59977 > localhost.8080: UDP, length 211
+        0x0000:  4500 00ef c6da 4000 4011 7521 7f00 0001  E.....@.@.u!....
+        0x0010:  7f00 0001 ea49 1f90 00db feee d135 2e4c  .....I.......5.L
+        0x0020:  c800 5cca 7f09 00
+        
+                                  75 6465 3c69 6f73 7472  ..\....ude<iostr
+        0x0030:  6561 6d3e 0a23 696e 636c 7564 6520 2269  eam>.#include."i
+        0x0040:  6e63 6c75 6465 2f63 7263 3332 2e68 7070  nclude/crc32.hpp
+        0x0050:  220a 2364 6566 696e 6520 4c44 4542 5547  ".#define.LDEBUG
+        0x0060:  2031 0a23 696e 636c 7564 6520 2269 6e63  .1.#include."inc
+        0x0070:  6c75 6465 2f75 7469 6c2e 6822 0a75 7369  lude/util.h".usi
+        0x0080:  6e67 206e 616d 6573 7061 6375 6465 3c69  ng.namespacude<i
+        0x0090:  6f73 7472 6561 6d3e 0a23 696e 636c 7564  ostream>.#includ
+        0x00a0:  6520 2269 6e63 6c75 6465 2f63 7263 3332  e."include/crc32
+        0x00b0:  2e68 7070 220a 2364 6566 696e 6520 4c44  .hpp".#define.LD
+        0x00c0:  4542 5547 2031 0a23 696e 636c 7564 6520  EBUG.1.#include.
+        0x00d0:  2269 6e63 6c75 6465 2f75 7469 6c2e 6822  "include/util.h"
+        0x00e0:  0a75 7369 6e67 206e 616d 6573 7061 63    .using.namespac
+
+
+22:36:48.459986 IP localhost.8080 > localhost.59977: UDP, length 11
+        0x0000:  4500 0027 c6db 4000 4011 75e8 7f00 0001  E..'..@.@.u.....
+        0x0010:  7f00 0001 1f90 ea49 0013 fe26 d235 2e4c  .......I...&.5.L
+        0x0020:  0000 5546 6168 02                        ..UFah.
+
+## FIN
+
+22:36:48.460023 IP localhost.59977 > localhost.8080: UDP, length 11
+        0x0000:  4500 0027 c6dc 4000 4011 75e7 7f00 0001  E..'..@.@.u.....
+        0x0010:  7f00 0001 ea49 1f90 0013 fe26 d235 2e4c  .....I.....&.5.L
+        0x0020:  0000 60e3 0281 04                        ..`....
+22:36:48.460049 IP localhost.8080 > localhost.59977: UDP, length 11
+        0x0000:  4500 0027 c6dd 4000 4011 75e6 7f00 0001  E..'..@.@.u.....
+        0x0010:  7f00 0001 1f90 ea49 0013 fe26 d235 2e4c  .......I...&.5.L
+        0x0020:  0000 4c82 0c6f 06                        ..L..o.
