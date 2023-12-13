@@ -116,8 +116,9 @@ class SlidingWindow {
    private:
     uint32_t window_size;
     uint32_t sliding_window_start = 0;
-    deque<string> window;
-    vector<string> buffer;
+    deque<rtp_packet_t> window;
+    vector<rtp_packet_t> buffer;
+
 
    protected:
     deque<bool> acked;
@@ -135,7 +136,7 @@ class SlidingWindow {
             ++sliding_window_start;
             buffer.push_back(move(window.front()));
             window.pop_front();
-            window.push_back("");
+            window.push_back(rtp_packet_t());
             acked.push_back(0);
             // window.pop_front();
         }
@@ -144,9 +145,7 @@ class SlidingWindow {
         return (index >= sliding_window_start &&
                 index < sliding_window_start + window_size);
     }
-    bool is_old(uint32_t index) const {
-        return (index < sliding_window_start);
-    }
+    bool is_old(uint32_t index) const { return (index < sliding_window_start); }
     bool too_large(uint32_t index) const {
         return (index >= sliding_window_start + window_size);
     }
@@ -159,7 +158,7 @@ class SlidingWindow {
     }
 
     bool not_set(uint32_t index) const { return !is_set(index); }
-    void set(uint32_t index, string&& data) {
+    void set(uint32_t index, rtp_packet_t data= rtp_packet_t()) {
         if (in_range(index)) {
             acked[index - sliding_window_start] = 1;
             window[index - sliding_window_start] = move(data);
@@ -169,7 +168,15 @@ class SlidingWindow {
     }
     uint32_t get_start() const { return sliding_window_start; }
     void save_to_file(const string& filepath) {
-        string_list_to_file(filepath, buffer);
+        ofstream fout(filepath);
+        for (auto& s : buffer) {
+            // fout << s.substr(0, 1461);
+            for(int i=0;i<s.rtp.length;++i){
+                fout<<s.payload[i];
+            }
+        }
+        // fout<<ends;
+        fout.close();
     }
 };
 

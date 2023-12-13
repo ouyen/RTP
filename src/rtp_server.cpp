@@ -59,10 +59,11 @@ void RTPServer::receive(const string& filepath) {
         switch (flag) {
             case RTP_FIN:
                 LOG_DEBUG("FIN received\n");
-                sliding_window.save_to_file(filepath);
+
                 LOG_DEBUG("Send FINACK\n");
                 udp_socket->send(
                     RTP::make_head(packet.rtp.seq_num, RTP_FIN | RTP_ACK));
+                sliding_window.save_to_file(filepath);
                 return close();
             case 0: {
                 uint32_t seq = packet.rtp.seq_num;
@@ -73,7 +74,7 @@ void RTPServer::receive(const string& filepath) {
                 uint32_t index = seq - seq_num_start - 1;
                 LOG_DEBUG("Receive Data,index: %u, SEQ: %u\n", index, seq);
 
-                //TODO: check if out of range
+                // TODO: check if out of range
                 if (sliding_window.too_large(index)) {
                     LOG_DEBUG("Out of range\n");
                     continue;
@@ -83,14 +84,14 @@ void RTPServer::receive(const string& filepath) {
                             LOG_DEBUG("Already received\n");
                         } else {
                             LOG_DEBUG("New data\n");
-                            sliding_window.set(index, packet.payload);
+                            sliding_window.set(index, packet);
                         }
                     }
                     uint32_t reply_seq =
                         (mode == GBN)
                             ? seq_num_start + 1 + sliding_window.get_start()
                             : seq;
-                    udp_socket->send(RTP::make_head(seq, RTP_ACK));
+                    udp_socket->send(RTP::make_head(reply_seq, RTP_ACK));
                     LOG_DEBUG("Send ACK for %u ;reply_seq:%u\n", seq,
                               reply_seq);
                 }
