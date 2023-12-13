@@ -46,6 +46,7 @@ class CRC32 {
         return r ^ (uint32_t)0xFF000000L;
     }
 
+   public:
     static void crc32(const void* data, size_t n_bytes, uint32_t* crc) {
         static uint32_t table[0x100];
         if (!*table)
@@ -119,7 +120,6 @@ class SlidingWindow {
     deque<rtp_packet_t> window;
     vector<rtp_packet_t> buffer;
 
-
    protected:
     deque<bool> acked;
 
@@ -158,7 +158,7 @@ class SlidingWindow {
     }
 
     bool not_set(uint32_t index) const { return !is_set(index); }
-    void set(uint32_t index, rtp_packet_t data= rtp_packet_t()) {
+    void set(uint32_t index, rtp_packet_t data = rtp_packet_t()) {
         if (in_range(index)) {
             acked[index - sliding_window_start] = 1;
             window[index - sliding_window_start] = move(data);
@@ -171,8 +171,8 @@ class SlidingWindow {
         ofstream fout(filepath);
         for (auto& s : buffer) {
             // fout << s.substr(0, 1461);
-            for(int i=0;i<s.rtp.length;++i){
-                fout<<s.payload[i];
+            for (int i = 0; i < s.rtp.length; ++i) {
+                fout << s.payload[i];
             }
         }
         // fout<<ends;

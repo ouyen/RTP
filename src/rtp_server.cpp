@@ -46,16 +46,40 @@ void RTPServer::receive(const string& filepath) {
     for (;;) {
         udp_socket->set_timeout(0, 100);
         rtp_packet_t packet = receive_packet();
+
+        LOG_DEBUG("FLAG: get someting\n");
+        LOG_DEBUG("SEQ: %u;LEN:%u ; CRC:%u; FLAG:%u\n", packet.rtp.seq_num,
+                  packet.rtp.length, packet.rtp.checksum, packet.rtp.flags);
+
         if (packet.rtp.checksum == 0 && packet.rtp.flags == 0 &&
             packet.rtp.length == 0 && packet.rtp.seq_num == 0) {
             LOG_DEBUG("Null\n");
             continue;
         }
+
+        if (sliding_window.too_large(packet.rtp.seq_num - seq_num_start - 1)) {
+            LOG_DEBUG("Out of range\n");
+            continue;
+        }
+
+        LOG_DEBUG("CRC check\n");
+
+        // uint32_t crc = packet.rtp.checksum;
+        // packet.rtp.checksum = 0;
+        // uint32_t cal_crc = 0;
+        // CRC32::crc32(&packet, 11 + packet.rtp.length, &cal_crc);
+
+        // bool result = (crc == cal_crc);
+        // packet.rtp.checksum = crc;
         if (CRC32::check_crc(packet) == false) {
+        // if (result == false) {
             LOG_DEBUG("CRC check failed\n");
             continue;
         }
         auto flag = packet.rtp.flags;
+
+        // LOG_DEBUG("FLAG: %u\n", flag);
+
         switch (flag) {
             case RTP_FIN:
                 LOG_DEBUG("FIN received\n");
